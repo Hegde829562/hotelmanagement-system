@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stay Details – IntelliStay</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Custom Design System -->
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body class="bg-ivory">
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-intellistay sticky-top">
+    <div class="container">
+      <a class="brand-logo" href="/index.html">
+        <i class="bi bi-compass text-olive"></i>
+        <span>Intelli</span>Stay
+      </a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarMain">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom active" href="/hotels.html">Explore Stays</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/compare.html">Compare Stays</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/recommendations.html">Recommendations</a>
+          </li>
+        </ul>
+
+        <div id="navbar-auth-container" class="d-flex align-items-center">
+          <!-- Populated dynamically by auth.js -->
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container my-4" id="hotel-detail-container">
+    
+    <!-- Top Breadcrumb & Header -->
+    <div class="mb-3">
+      <a href="/hotels.html" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i> Back to all stays</a>
+    </div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-2 mb-4">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span id="hotel-category-badge" class="badge bg-forest">Category</span>
+          <span id="hotel-rating-badge" class="rating-pill">4.8</span>
+        </div>
+        <h1 id="hotel-name" class="display-6 font-serif mb-1">Loading Stay...</h1>
+        <div id="hotel-location-text" class="text-muted small">Loading location...</div>
+      </div>
+      <div>
+        <button class="btn btn-outline-forest btn-sm rounded-pill px-3" onclick="window.print()">
+          <i class="bi bi-share me-1"></i> Share Stay
+        </button>
+      </div>
+    </div>
+
+    <!-- Image Gallery Grid -->
+    <div class="hotel-gallery-grid">
+      <div>
+        <img id="gallery-primary-img" class="gallery-main" src="" alt="Main photo">
+      </div>
+      <div class="gallery-secondary-stack">
+        <img id="gallery-sub-img-1" class="gallery-sub" src="" alt="Secondary photo 1">
+        <img id="gallery-sub-img-2" class="gallery-sub" src="" alt="Secondary photo 2">
+      </div>
+    </div>
+
+    <!-- Content & Live Availability Selector -->
+    <div class="row g-4">
+      
+      <!-- Left Column: Description, Amenities, Rooms, Reviews -->
+      <div class="col-lg-8">
+        
+        <!-- About This Stay -->
+        <section class="p-4 bg-white rounded-4 border border-1 shadow-sm mb-4">
+          <h4 class="font-serif mb-3">About This Stay</h4>
+          <p id="hotel-description" class="text-dark leading-relaxed mb-0">Loading description...</p>
+        </section>
+
+        <!-- Curated Amenities -->
+        <section class="p-4 bg-white rounded-4 border border-1 shadow-sm mb-4">
+          <h4 class="font-serif mb-3">Property Amenities & Comforts</h4>
+          <div class="row g-2" id="hotel-amenities-list">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- Room Types with Live Inventory -->
+        <section class="p-4 bg-white rounded-4 border border-1 shadow-sm mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h4 class="font-serif mb-1">Select Room & Category</h4>
+              <p class="text-muted small mb-0">Live inventory confirmed via date overlap verification.</p>
+            </div>
+          </div>
+
+          <div id="room-types-selection-container">
+            <!-- Populated by JS after date check -->
+          </div>
+        </section>
+
+        <!-- Hospitality Policies -->
+        <section class="p-4 bg-white rounded-4 border border-1 shadow-sm mb-4">
+          <h4 class="font-serif mb-3">Hospitality Guidelines & Policies</h4>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="small fw-bold text-muted text-uppercase">Check-In Time</div>
+              <div class="fw-semibold text-forest" id="hotel-checkin-time">14:00</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small fw-bold text-muted text-uppercase">Check-Out Time</div>
+              <div class="fw-semibold text-forest" id="hotel-checkout-time">11:00</div>
+            </div>
+            <div class="col-md-4">
+              <div class="small fw-bold text-muted text-uppercase">Cancellation Policy</div>
+              <div class="small text-muted" id="hotel-cancellation-policy">Free cancellation up to 48 hours prior.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Guest Reviews -->
+        <section class="p-4 bg-white rounded-4 border border-1 shadow-sm mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h4 class="font-serif mb-1">Guest Experiences & Feedback</h4>
+              <div id="reviews-count-header" class="text-muted small">Verified feedback from completed stays</div>
+            </div>
+            <div class="text-end">
+              <span id="reviews-overall-score" class="display-6 font-serif fw-bold text-forest">4.8</span>
+              <span class="text-muted small">/ 5.0</span>
+            </div>
+          </div>
+
+          <div id="hotel-reviews-container">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right Column: Sticky Date & Reservation Panel -->
+      <div class="col-lg-4">
+        <div class="p-4 bg-white rounded-4 border border-1 shadow-sm sticky-top" style="top: 90px; border-color: var(--border-subtle) !important;">
+          <h5 class="font-serif mb-3"><i class="bi bi-calendar2-range text-olive me-1"></i> Your Reservation Dates</h5>
+          
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Check-in</label>
+            <input type="date" id="detail-checkin" class="form-control form-control-sm">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Check-out</label>
+            <input type="date" id="detail-checkout" class="form-control form-control-sm">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted text-uppercase">Number of Guests</label>
+            <select id="detail-guests" class="form-select form-select-sm" onchange="checkLiveAvailability()">
+              <option value="1">1 Adult</option>
+              <option value="2" selected>2 Adults</option>
+              <option value="3">3 Adults</option>
+              <option value="4">4+ Adults / Family</option>
+            </select>
+          </div>
+
+          <div class="p-3 bg-cream rounded-3 mb-3">
+            <div class="d-flex align-items-center gap-2 small text-olive mb-1">
+              <i class="bi bi-shield-check fs-5"></i>
+              <span class="fw-bold">Guaranteed Direct Reservation</span>
+            </div>
+            <div class="small text-muted" style="font-size: 0.78rem;">
+              Instant booking reference with database concurrency lock. No double bookings.
+            </div>
+          </div>
+
+          <p class="small text-muted text-center mb-0">Select your preferred room category from the options on the left to confirm your reservation.</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Interactive Booking Confirmation Modal -->
+  <div class="modal fade" id="bookingConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-forest text-white border-0 px-4 py-3">
+          <h5 class="modal-title font-serif"><i class="bi bi-check2-circle text-warning me-2"></i> Confirm Your Stay Reservation</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-4">
+            
+            <!-- Reservation Summary -->
+            <div class="col-md-6 border-end">
+              <h6 class="text-uppercase fw-bold text-olive small mb-3">Stay Overview</h6>
+              <h5 id="modal-hotel-title" class="fw-bold text-forest mb-1">Hotel Title</h5>
+              <div id="modal-room-type" class="badge bg-gold-tint text-forest border mb-3">Room Type</div>
+
+              <div class="mb-2 small">
+                <span class="text-muted">Dates:</span> <strong id="modal-dates" class="text-dark">Nov 20 to Nov 23</strong>
+              </div>
+              <div class="mb-3 small">
+                <span class="text-muted">Guests:</span> <strong id="modal-guests" class="text-dark">2 Guests</strong>
+              </div>
+
+              <hr class="text-muted my-3">
+
+              <h6 class="text-uppercase fw-bold text-olive small mb-2">Price Breakdown</h6>
+              <div class="d-flex justify-content-between small text-muted mb-1">
+                <span>Room Charges:</span>
+                <span id="modal-subtotal">₹0</span>
+              </div>
+              <div class="d-flex justify-content-between small text-muted mb-2">
+                <span>GST Taxes (12%):</span>
+                <span id="modal-tax">₹0</span>
+              </div>
+              <div class="d-flex justify-content-between fw-bold text-forest fs-5 pt-2 border-top">
+                <span>Total Amount:</span>
+                <span id="modal-total">₹0</span>
+              </div>
+            </div>
+
+            <!-- Guest & Simulated Payment Details -->
+            <div class="col-md-6">
+              <h6 class="text-uppercase fw-bold text-olive small mb-3">Guest Information</h6>
+              
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-muted">Full Name</label>
+                <input type="text" id="booking-guest-name" class="form-control form-control-sm" readonly>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label small fw-semibold text-muted">Email</label>
+                  <input type="email" id="booking-guest-email" class="form-control form-control-sm" readonly>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold text-muted">Phone</label>
+                  <input type="text" id="booking-guest-phone" class="form-control form-control-sm">
+                </div>
+              </div>
+
+              <h6 class="text-uppercase fw-bold text-olive small mb-2">Simulated Payment Gateway</h6>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-muted">Payment Method</label>
+                <select id="booking-payment-method" class="form-select form-select-sm">
+                  <option value="Credit / Debit Card (Simulated)">Credit / Debit Card</option>
+                  <option value="UPI / Google Pay (Simulated)">UPI / Google Pay</option>
+                  <option value="Net Banking (Simulated)">Net Banking</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-muted">Special Requests (Optional)</label>
+                <textarea id="booking-special-requests" class="form-control form-control-sm" rows="2" placeholder="e.g. Quiet upper floor, late check-in"></textarea>
+              </div>
+
+              <div class="p-2 bg-light rounded text-muted" style="font-size: 0.72rem;">
+                <i class="bi bi-info-circle me-1"></i> This is a simulated academic DBMS transaction. Your card will not be charged.
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer border-0 px-4 pb-4">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="modal-confirm-btn" class="btn btn-forest btn-sm px-4" onclick="confirmBookingSubmission()">
+            Complete Simulated Payment & Book
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Success Modal -->
+  <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+        <div class="mb-3">
+          <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+            <i class="bi bi-check2 fs-1"></i>
+          </div>
+        </div>
+        <h4 class="font-serif fw-bold text-forest mb-1">Reservation Confirmed!</h4>
+        <p class="text-muted small mb-4">Your stay has been recorded in the database and inventory has been locked.</p>
+
+        <div class="bg-cream p-3 rounded-3 text-start mb-4">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">Booking Reference:</span>
+            <strong id="success-booking-ref" class="text-forest">BK-2026-XXXXX</strong>
+          </div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">Assigned Physical Room:</span>
+            <strong id="success-room-number" class="text-forest">Room 101</strong>
+          </div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">Total Paid (Simulated):</span>
+            <strong id="success-final-amount" class="text-forest">₹0</strong>
+          </div>
+          <div class="d-flex justify-content-between small">
+            <span class="text-muted">Loyalty Points Earned:</span>
+            <strong id="success-loyalty-pts" class="text-warning">+200 Points</strong>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-center">
+          <a href="/customer-dashboard.html" class="btn btn-forest btn-sm px-4">Go to My Dashboard</a>
+          <button type="button" class="btn btn-outline-forest btn-sm px-3" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer-hospitality mt-5">
+    <div class="container text-center">
+      <div class="brand-logo text-white justify-content-center mb-2">
+        <i class="bi bi-compass text-warning"></i>
+        <span class="text-white">Intelli</span><span class="text-warning">Stay</span>
+      </div>
+      <p class="small text-light mb-2">Academic DBMS Hospitality Platform • Node.js, Express, MySQL 8.0+, Bootstrap 5</p>
+      <div class="footer-bottom pt-3 mt-3 text-light small">&copy; 2026 IntelliStay Systems.</div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- App JS -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/hotel-detail.js"></script>
+</body>
+</html>
+

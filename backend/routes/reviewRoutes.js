@@ -1,0 +1,14 @@
+// =====================================================================
+// INTELLISTAY: Review Routes
+// =====================================================================
+
+const express = require('express');
+const router = express.Router();
+const reviewController = require('../controllers/reviewController');
+const { authenticate, authorize } = require('../middleware/auth');
+
+router.get('/hotel/:hotelId', reviewController.getHotelReviews);
+router.post('/add', authenticate, authorize('customer'), reviewController.createReview);
+
+module.exports = router;
+

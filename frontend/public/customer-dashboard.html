@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard – IntelliStay</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Custom Design System -->
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body class="bg-ivory">
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-intellistay sticky-top">
+    <div class="container">
+      <a class="brand-logo" href="/index.html">
+        <i class="bi bi-compass text-olive"></i>
+        <span>Intelli</span>Stay
+      </a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarMain">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/hotels.html">Explore Stays</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/compare.html">Compare Stays</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="/recommendations.html">Recommendations</a>
+          </li>
+        </ul>
+
+        <div id="navbar-auth-container" class="d-flex align-items-center"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Profile Banner -->
+  <header class="py-4 bg-cream border-bottom mb-4">
+    <div class="container">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80" class="rounded-circle border border-2 border-warning shadow-sm" style="width: 68px; height: 68px; object-fit: cover;">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h2 id="cust-header-name" class="font-serif mb-0">Rohan Verma</h2>
+              <span class="badge bg-forest">Customer Portal</span>
+            </div>
+            <div id="cust-header-email" class="text-muted small">customer@intellistay.com</div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-white rounded-4 border border-1 shadow-sm d-flex align-items-center gap-3">
+          <div class="bg-gold-tint p-2 rounded-circle text-warning fs-3">
+            <i class="bi bi-gem"></i>
+          </div>
+          <div>
+            <div class="small text-muted fw-bold text-uppercase" style="font-size: 0.72rem;">IntelliStay Loyalty Rewards</div>
+            <div id="cust-header-points" class="fs-4 fw-bold text-forest">450 Points</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Tabs -->
+  <main class="container my-4">
+    <ul class="nav nav-pills mb-4 gap-2" id="cust-tabs">
+      <li class="nav-item">
+        <button class="nav-link active rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tab-bookings">
+          <i class="bi bi-calendar2-check me-2"></i> My Bookings
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tab-wishlist">
+          <i class="bi bi-heart me-2"></i> Saved Stays (Wishlist)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tab-profile">
+          <i class="bi bi-person me-2"></i> Profile & Security
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      
+      <!-- TAB 1: BOOKINGS -->
+      <div class="tab-pane fade show active" id="tab-bookings">
+        <h4 class="font-serif text-forest mb-3">Upcoming Reservations</h4>
+        <div id="upcoming-bookings-container" class="mb-5">
+          <div class="text-center py-4"><span class="spinner-border spinner-border-sm text-forest"></span></div>
+        </div>
+
+        <h4 class="font-serif text-forest mb-3">Past Completed Stays</h4>
+        <div id="past-bookings-container" class="mb-5">
+          <div class="text-center py-4"><span class="spinner-border spinner-border-sm text-forest"></span></div>
+        </div>
+
+        <h4 class="font-serif text-forest mb-3">Cancelled Bookings</h4>
+        <div id="cancelled-bookings-container">
+          <div class="text-center py-4"><span class="spinner-border spinner-border-sm text-forest"></span></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: WISHLIST -->
+      <div class="tab-pane fade" id="tab-wishlist">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="font-serif text-forest mb-0">Your Shortlisted Dream Stays</h4>
+          <span class="small text-muted">Ready for booking whenever your dates align</span>
+        </div>
+        <div class="row" id="wishlist-grid-container">
+          <div class="text-center py-4"><span class="spinner-border spinner-border-sm text-forest"></span></div>
+        </div>
+      </div>
+
+      <!-- TAB 3: PROFILE & SECURITY -->
+      <div class="tab-pane fade" id="tab-profile">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="p-4 bg-white rounded-4 border shadow-sm">
+              <h5 class="font-serif text-forest mb-3"><i class="bi bi-person-lines-fill me-2 text-olive"></i> Personal Information</h5>
+              <form onsubmit="handleProfileSave(event)">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Full Name</label>
+                  <input type="text" id="prof-name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Email Address</label>
+                  <input type="email" id="prof-email" class="form-control" readonly disabled>
+                  <small class="text-muted">Email is linked to your primary account identifier.</small>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Phone Number</label>
+                  <input type="text" id="prof-phone" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-forest btn-sm px-4">Save Changes</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="p-4 bg-white rounded-4 border shadow-sm">
+              <h5 class="font-serif text-forest mb-3"><i class="bi bi-shield-lock me-2 text-olive"></i> Change Password</h5>
+              <form onsubmit="handleChangePassword(event)">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Current Password</label>
+                  <input type="password" id="pwd-current" class="form-control" required>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label small fw-bold text-muted text-uppercase">New Password (min 6 chars)</label>
+                  <input type="password" id="pwd-new" class="form-control" minlength="6" required>
+                </div>
+                <button type="submit" class="btn btn-outline-forest btn-sm px-4">Update Password</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Review Modal -->
+  <div class="modal fade" id="writeReviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-forest text-white border-0 px-4 py-3">
+          <h5 class="modal-title font-serif"><i class="bi bi-star-half text-warning me-2"></i> Review Your Stay Experience</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <h6 id="review-hotel-name" class="fw-bold text-forest mb-3">Hotel Name</h6>
+          
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Overall Rating (1.0 to 5.0)</label>
+            <select id="review-overall-rating" class="form-select form-select-sm">
+              <option value="5.0" selected>5.0 - Exceptional Hospitality</option>
+              <option value="4.5">4.5 - Wonderful Experience</option>
+              <option value="4.0">4.0 - Very Good</option>
+              <option value="3.5">3.5 - Average Comfort</option>
+              <option value="3.0">3.0 - Below Expectations</option>
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted">Cleanliness (1-5)</label>
+              <select id="review-cleanliness" class="form-select form-select-sm">
+                <option value="5.0" selected>5.0 - Immaculate</option>
+                <option value="4.0">4.0 - Clean</option>
+                <option value="3.0">3.0 - Adequate</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted">Staff Hospitality (1-5)</label>
+              <select id="review-staff" class="form-select form-select-sm">
+                <option value="5.0" selected>5.0 - Outstanding</option>
+                <option value="4.0">4.0 - Courteous</option>
+                <option value="3.0">3.0 - Average</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Review Title</label>
+            <input type="text" id="review-title" class="form-control form-control-sm" placeholder="e.g. Peaceful stay surrounded by coffee blossoms">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Detailed Comments</label>
+            <textarea id="review-comment" class="form-control form-control-sm" rows="3" placeholder="Share your experience of the rooms, surroundings, dining, and staff service..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 px-4 pb-4">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-forest btn-sm px-4" onclick="submitCustomerReview()">Publish Review</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer-hospitality mt-5">
+    <div class="container text-center">
+      <div class="brand-logo text-white justify-content-center mb-2">
+        <i class="bi bi-compass text-warning"></i>
+        <span class="text-white">Intelli</span><span class="text-warning">Stay</span>
+      </div>
+      <p class="small text-light mb-2">Academic DBMS Hospitality Platform • Node.js, Express, MySQL 8.0+, Bootstrap 5</p>
+      <div class="footer-bottom pt-3 mt-3 text-light small">&copy; 2026 IntelliStay Systems.</div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- App JS -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/customer-dashboard.js"></script>
+</body>
+</html>
+

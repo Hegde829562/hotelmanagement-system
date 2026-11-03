@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Owner Dashboard – IntelliStay</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  
+  <!-- Custom Design System -->
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body class="bg-ivory">
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-intellistay sticky-top">
+    <div class="container-fluid px-4">
+      <a class="brand-logo" href="/index.html">
+        <i class="bi bi-compass text-olive"></i>
+        <span>Intelli</span>Stay
+        <span class="badge bg-warning text-dark fs-6 ms-2">Owner Suite</span>
+      </a>
+
+      <div class="d-flex align-items-center gap-3 ms-auto">
+        <!-- Property Switcher -->
+        <div class="d-flex align-items-center gap-2">
+          <label class="small text-muted fw-bold d-none d-md-inline text-uppercase" style="font-size: 0.72rem;">Managing:</label>
+          <select id="property-switcher-select" class="form-select form-select-sm rounded-pill fw-semibold border-success" style="width: 250px;">
+            <option value="all">All Managed Properties</option>
+          </select>
+        </div>
+
+        <button class="btn btn-forest btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addHotelModal">
+          <i class="bi bi-plus-lg me-1"></i> Add Property
+        </button>
+
+        <div id="navbar-auth-container"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Shell -->
+  <div class="dashboard-layout">
+    
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-profile">
+        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&q=80" class="sidebar-avatar" alt="Owner">
+        <div class="overflow-hidden">
+          <div class="sidebar-name text-truncate" id="owner-name-display">Kabir Oberoi</div>
+          <div class="sidebar-role-badge"><i class="bi bi-shield-check text-success me-1"></i> Hotelier Partner</div>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <a href="#" class="sidebar-link active" data-section="overview">
+          <i class="bi bi-speedometer2"></i> Operations & Analytics
+        </a>
+        <a href="#" class="sidebar-link" data-section="rooms">
+          <i class="bi bi-grid-3x3"></i> Room Status Grid
+        </a>
+        <a href="#" class="sidebar-link" data-section="bookings">
+          <i class="bi bi-calendar-check"></i> Bookings & Front Desk
+        </a>
+        <a href="#" class="sidebar-link" data-section="properties">
+          <i class="bi bi-buildings"></i> My Properties
+        </a>
+        <a href="#" class="sidebar-link" data-section="staff">
+          <i class="bi bi-people"></i> Staff & Employees
+        </a>
+        <hr class="text-muted my-3">
+        <a href="/hotels.html" class="sidebar-link text-muted" target="_blank">
+          <i class="bi bi-box-arrow-up-right"></i> Public Stays Catalog
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="dashboard-content">
+      
+      <!-- SECTION 1: OVERVIEW & ANALYTICS -->
+      <div id="sec-overview" class="dashboard-section">
+        <div class="dashboard-header">
+          <div>
+            <h2 class="dashboard-title font-serif">Operational Overview</h2>
+            <div class="dashboard-subtitle">Real-time room occupancy, today's arrivals, housekeeping queues, and revenue metrics.</div>
+          </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-xl-2 col-md-4 col-6">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Gross Revenue</span>
+                <div class="metric-icon-wrap bg-forest text-white"><i class="bi bi-currency-rupee"></i></div>
+              </div>
+              <div class="metric-value text-forest" id="stat-revenue">₹0</div>
+              <span class="metric-trend"><i class="bi bi-graph-up-arrow me-1"></i> Lifetime total</span>
+            </div>
+          </div>
+
+          <div class="col-xl-2 col-md-4 col-6">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Occupancy</span>
+                <div class="metric-icon-wrap bg-gold-tint text-olive"><i class="bi bi-pie-chart"></i></div>
+              </div>
+              <div class="metric-value text-forest" id="stat-occupancy">0%</div>
+              <span class="metric-trend text-muted">Current utilization</span>
+            </div>
+          </div>
+
+          <div class="col-xl-2 col-md-4 col-6">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Today's Arrivals</span>
+                <div class="metric-icon-wrap bg-success-subtle text-success"><i class="bi bi-box-arrow-in-down"></i></div>
+              </div>
+              <div class="metric-value text-forest" id="stat-arrivals">0</div>
+              <span class="metric-trend text-muted">Check-ins expected</span>
+            </div>
+          </div>
+
+          <div class="col-xl-2 col-md-4 col-6">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Departures</span>
+                <div class="metric-icon-wrap bg-light text-muted"><i class="bi bi-box-arrow-up"></i></div>
+              </div>
+              <div class="metric-value text-forest" id="stat-departures">0</div>
+              <span class="metric-trend text-muted">Check-outs today</span>
+            </div>
+          </div>
+
+          <div class="col-xl-2 col-md-4 col-6">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Turnover Clean</span>
+                <div class="metric-icon-wrap bg-warning-subtle text-warning"><i class="bi bi-brush"></i></div>
+              </div>
+              <div class="metric-value text-warning" id="stat-cleaning">0</div>
+              <span class="metric-trend text-muted">Dirty / in cleaning</span>
+            </div>
+          </div>
+
+          <div class="col-xl-2 col-md-4 col-6">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Maintenance</span>
+                <div class="metric-icon-wrap bg-danger-subtle text-danger"><i class="bi bi-wrench"></i></div>
+              </div>
+              <div class="metric-value text-danger" id="stat-maintenance">0</div>
+              <span class="metric-trend text-muted">Open tickets</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+          <div class="col-lg-8">
+            <div class="chart-card h-100">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-serif mb-0">Revenue Velocity (Recent Bookings)</h5>
+                <span class="badge bg-gold-tint text-forest border">Daily Realization</span>
+              </div>
+              <div style="height: 250px;">
+                <canvas id="revenueChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="chart-card h-100">
+              <h5 class="font-serif mb-3">Room Status Distribution</h5>
+              <div style="height: 200px;">
+                <canvas id="roomDonutChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECTION 2: ROOM STATUS GRID -->
+      <div id="sec-rooms" class="dashboard-section" style="display: none;">
+        <div class="dashboard-header">
+          <div>
+            <h2 class="dashboard-title font-serif">Room Status Grid</h2>
+            <div class="dashboard-subtitle">Visual matrix of physical room operational state. Click any tile to update status.</div>
+          </div>
+          <div class="d-flex gap-2">
+            <span class="badge bg-success">Available</span>
+            <span class="badge bg-forest">Occupied</span>
+            <span class="badge bg-warning text-dark">Cleaning</span>
+            <span class="badge bg-danger">Maintenance</span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-white rounded-4 border shadow-sm">
+          <div class="room-status-grid" id="rooms-status-grid-container">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: BOOKINGS & FRONT DESK -->
+      <div id="sec-bookings" class="dashboard-section" style="display: none;">
+        <div class="dashboard-header">
+          <div>
+            <h2 class="dashboard-title font-serif">Front Desk & Reservation Registry</h2>
+            <div class="dashboard-subtitle">Manage guest arrivals, check-in room key handovers, and check-outs.</div>
+          </div>
+        </div>
+
+        <div class="table-custom-container">
+          <table class="table table-custom">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Guest</th>
+                <th>Room Type</th>
+                <th>Physical Room</th>
+                <th>Dates</th>
+                <th>Amount</th>
+                <th>Front Desk Action</th>
+              </tr>
+            </thead>
+            <tbody id="owner-bookings-tbody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION 4: MY PROPERTIES -->
+      <div id="sec-properties" class="dashboard-section" style="display: none;">
+        <div class="dashboard-header">
+          <div>
+            <h2 class="dashboard-title font-serif">Managed Properties</h2>
+            <div class="dashboard-subtitle">Catalog of properties registered under your ownership account.</div>
+          </div>
+          <button class="btn btn-forest btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addHotelModal">
+            <i class="bi bi-plus-lg me-1"></i> Register New Stay
+          </button>
+        </div>
+
+        <div class="table-custom-container">
+          <table class="table table-custom">
+            <thead>
+              <tr>
+                <th>Hotel Name</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Base Rate</th>
+                <th>Rooms</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="owner-hotels-tbody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION 5: STAFF & EMPLOYEES -->
+      <div id="sec-staff" class="dashboard-section" style="display: none;">
+        <div class="dashboard-header">
+          <div>
+            <h2 class="dashboard-title font-serif">Staff Roster & Job Role Allocations</h2>
+            <div class="dashboard-subtitle">Manage receptionists, housekeeping crew, maintenance engineers, and kitchen staff.</div>
+          </div>
+          <button class="btn btn-forest btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+            <i class="bi bi-person-plus me-1"></i> Register Employee
+          </button>
+        </div>
+
+        <div class="table-custom-container">
+          <table class="table table-custom">
+            <thead>
+              <tr>
+                <th>Emp Code</th>
+                <th>Employee Name</th>
+                <th>Assigned Role</th>
+                <th>Department</th>
+                <th>Shift</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="owner-staff-tbody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal: Add Hotel Property -->
+  <div class="modal fade" id="addHotelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-forest text-white border-0 px-4 py-3">
+          <h5 class="modal-title font-serif"><i class="bi bi-building-add text-warning me-2"></i> Register New Hotel Property</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form onsubmit="handleCreateNewHotel(event)">
+          <div class="modal-body p-4">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label small fw-bold text-muted text-uppercase">Hotel Name</label>
+                <input type="text" id="new-hotel-name" class="form-control" required placeholder="e.g. Whispering Palms Heritage Villa">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Category</label>
+                <select id="new-hotel-category" class="form-select">
+                  <option value="Boutique">Boutique</option>
+                  <option value="Luxury">Luxury</option>
+                  <option value="Resort">Resort</option>
+                  <option value="Beach Stay">Beach Stay</option>
+                  <option value="Hill Station">Hill Station</option>
+                  <option value="Homestay">Homestay</option>
+                  <option value="Business">Business</option>
+                  <option value="Budget">Budget</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Base Price / Night (₹)</label>
+                <input type="number" id="new-hotel-price" class="form-control" required value="4500">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">City</label>
+                <input type="text" id="new-hotel-city" class="form-control" required placeholder="e.g. Coorg, Goa, Munnar">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">State</label>
+                <input type="text" id="new-hotel-state" class="form-control" required placeholder="e.g. Karnataka, Kerala">
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label small fw-bold text-muted text-uppercase">Street Address</label>
+                <input type="text" id="new-hotel-address" class="form-control" required placeholder="Full street address">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted text-uppercase">Pincode</label>
+                <input type="text" id="new-hotel-pincode" class="form-control" value="560001">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-bold text-muted text-uppercase">High-Res Facade Photo URL</label>
+                <input type="url" id="new-hotel-image" class="form-control" value="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-bold text-muted text-uppercase">Description</label>
+                <textarea id="new-hotel-description" class="form-control" rows="3" placeholder="Tell guests what makes your property special..."></textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-bold text-muted text-uppercase">Amenities Available</label>
+                <div class="row g-2" id="new-hotel-amenities-container">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-0 px-4 pb-4">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-forest btn-sm px-4">Register Hotel & Initialize Rooms</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Staff Member -->
+  <div class="modal fade" id="addStaffModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-forest text-white border-0 px-4 py-3">
+          <h5 class="modal-title font-serif"><i class="bi bi-person-plus text-warning me-2"></i> Register New Staff Employee</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form onsubmit="handleRegisterNewStaff(event)">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Full Name</label>
+              <input type="text" id="staff-full-name" class="form-control" required placeholder="e.g. Ramesh K">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Email (Login Username)</label>
+              <input type="email" id="staff-email" class="form-control" required placeholder="e.g. ramesh@intellistay.com">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Phone</label>
+              <input type="text" id="staff-phone" class="form-control" required value="+91 98450 12345">
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Role</label>
+                <select id="staff-role" class="form-select">
+                  <option value="receptionist">Receptionist</option>
+                  <option value="housekeeping">Housekeeping</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="manager">Hotel Manager</option>
+                  <option value="room_service">Room Service</option>
+                  <option value="kitchen">Kitchen Staff</option>
+                  <option value="security">Security</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Department</label>
+                <select id="staff-dept" class="form-select">
+                  <option value="Front Office">Front Office</option>
+                  <option value="Housekeeping">Housekeeping</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Management">Management</option>
+                  <option value="F&B">F&B</option>
+                  <option value="Security">Security</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Shift</label>
+                <select id="staff-shift" class="form-select">
+                  <option value="Morning">Morning Shift</option>
+                  <option value="Evening">Evening Shift</option>
+                  <option value="Night">Night Shift</option>
+                  <option value="Rotational">Rotational</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Monthly Salary (₹)</label>
+                <input type="number" id="staff-salary" class="form-control" value="28000">
+              </div>
+            </div>
+
+            <div class="p-2 bg-light rounded text-muted small">
+              <i class="bi bi-key me-1"></i> Default initial password is <code>password123</code>. The employee can change it upon logging in.
+            </div>
+          </div>
+          <div class="modal-footer border-0 px-4 pb-4">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-forest btn-sm px-4">Create Employee Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Update Room Operational & Housekeeping Status -->
+  <div class="modal fade" id="updateRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-forest text-white border-0 px-4 py-3">
+          <h5 class="modal-title font-serif"><i class="bi bi-door-open text-warning me-2"></i> Update Room Status</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form onsubmit="handleSaveRoomStatus(event)">
+          <input type="hidden" id="edit-room-id">
+          <div class="modal-body p-4">
+            <div class="p-3 bg-cream rounded-3 mb-3 d-flex justify-content-between align-items-center">
+              <div>
+                <span class="fs-4 fw-bold text-forest" id="edit-room-number-display">Room 101</span>
+                <div class="small text-muted" id="edit-room-type-display">Deluxe Heritage Room • Floor 1</div>
+              </div>
+              <span class="badge bg-forest px-3 py-2" id="edit-room-current-badge">Available</span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Operational Status</label>
+              <select id="edit-room-status" class="form-select">
+                <option value="available">Available (Ready for guest booking)</option>
+                <option value="occupied">Occupied (Guest in-house)</option>
+                <option value="cleaning">Cleaning (Under turnover sanitization)</option>
+                <option value="maintenance">Maintenance (Under repair/inspection)</option>
+                <option value="out_of_order">Out of Order (Temporarily withdrawn)</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Housekeeping Cleanliness</label>
+              <select id="edit-room-hk" class="form-select">
+                <option value="clean">Clean (Inspected & sanitized)</option>
+                <option value="dirty">Dirty (Requires turnover cleaning)</option>
+                <option value="in_progress">In Progress (Housekeeping currently inside)</option>
+                <option value="inspecting">Inspecting (Awaiting supervisor check)</option>
+              </select>
+            </div>
+
+            <div class="p-2 bg-light rounded text-muted small">
+              <i class="bi bi-info-circle me-1"></i> Changes persist immediately to the database and update occupancy & housekeeping task boards.
+            </div>
+          </div>
+          <div class="modal-footer border-0 px-4 pb-4">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-forest btn-sm px-4">Save Room Status</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Staff Member (Role, Department, Shift, Salary, Status) -->
+  <div class="modal fade" id="editStaffModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow-lg">
+        <div class="modal-header bg-forest text-white border-0 px-4 py-3">
+          <h5 class="modal-title font-serif"><i class="bi bi-person-gear text-warning me-2"></i> Edit Staff Member Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form onsubmit="handleSaveStaffChanges(event)">
+          <input type="hidden" id="edit-staff-id">
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Full Name</label>
+              <input type="text" id="edit-staff-name" class="form-control" required>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Role</label>
+                <select id="edit-staff-role" class="form-select">
+                  <option value="manager">Hotel Manager</option>
+                  <option value="receptionist">Receptionist</option>
+                  <option value="housekeeping">Housekeeping Staff</option>
+                  <option value="maintenance">Maintenance Staff</option>
+                  <option value="room_service">Room Service Staff</option>
+                  <option value="kitchen">Kitchen Staff</option>
+                  <option value="security">Security Staff</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Department</label>
+                <select id="edit-staff-dept" class="form-select">
+                  <option value="Management">Management</option>
+                  <option value="Front Office">Front Office</option>
+                  <option value="Housekeeping">Housekeeping</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="F&B">F&B</option>
+                  <option value="Security">Security</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Assigned Shift</label>
+                <select id="edit-staff-shift" class="form-select">
+                  <option value="Morning">Morning Shift</option>
+                  <option value="Evening">Evening Shift</option>
+                  <option value="Night">Night Shift</option>
+                  <option value="Rotational">Rotational</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-muted text-uppercase">Monthly Salary (₹)</label>
+                <input type="number" id="edit-staff-salary" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted text-uppercase">Employment Status</label>
+              <select id="edit-staff-status" class="form-select">
+                <option value="1">Active Employee</option>
+                <option value="0">Inactive / On Leave</option>
+              </select>
+            </div>
+
+            <div class="p-2 bg-light rounded text-muted small">
+              <i class="bi bi-check2-circle text-success me-1"></i> Updates persist permanently in the database across all sessions.
+            </div>
+          </div>
+          <div class="modal-footer border-0 px-4 pb-4">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-forest btn-sm px-4">Save Staff Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- App JS -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/owner-dashboard.js"></script>
+</body>
+</html>
+
