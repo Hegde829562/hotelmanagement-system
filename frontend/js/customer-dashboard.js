@@ -35,6 +35,8 @@ function initTabNavigation() {
   }
 }
 
+let cachedCustomerBookings = [];
+
 async function loadCustomerBookings() {
   const upcomingWrap = document.getElementById('upcoming-bookings-container');
   const pastWrap = document.getElementById('past-bookings-container');
@@ -43,6 +45,8 @@ async function loadCustomerBookings() {
   try {
     const res = await api.get('/bookings/my-bookings');
     if (!res.success) return;
+
+    cachedCustomerBookings = [...(res.upcoming || []), ...(res.past || []), ...(res.cancelled || [])];
 
     // Upcoming
     if (res.upcoming.length === 0) {
@@ -125,6 +129,12 @@ function renderBookingCard(b, type) {
           ${isCancelled ? `
             <div class="small text-danger fw-semibold">Refund Processed</div>
           ` : ''}
+
+          <div class="mt-2">
+            <button class="btn btn-outline-danger btn-sm px-2 py-1 w-100" style="font-size: 0.75rem;" onclick="openRaiseComplaintModal(${b.hotel_id}, '${b.hotel_name.replace(/'/g, "\\'")}', '${b.assigned_room_number || ''}')">
+              <i class="bi bi-shield-exclamation me-1"></i> Raise Complaint
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -283,6 +293,161 @@ async function handleChangePassword(e) {
       api.showToast('Password changed successfully.', 'success');
       document.getElementById('pwd-current').value = '';
       document.getElementById('pwd-new').value = '';
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
+  }
+}
+
+// =====================================================================
+// CUSTOMER COMPLAINTS & SERVICE REQUESTS
+// =====================================================================
+
+async function loadCustomerComplaints() {
+  const container = document.getElementById('customer-complaints-container');
+  if (!container) return;
+
+  container.innerHTML = '<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading complaints...</div>';
+
+  try {
+    const res = await api.get('/staff/customer/complaints');
+    if (!res.success || !res.complaints || res.complaints.length === 0) {
+      container.innerHTML = `
+        <div class="p-4 text-center bg-light rounded-4 border text-muted">
+          <i class="bi bi-shield-check fs-2 text-success d-block mb-2"></i>
+          No open issues or complaints reported. Have a concern during your stay? Click "Raise New Complaint" above.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = res.complaints.map(c => {
+      const isResolved = c.status === 'resolved' || c.status === 'closed';
+
+      return `
+        <div class="card mb-3 border rounded-3 p-3 shadow-sm" style="border-left: 5px solid ${isResolved ? '#2d5a27' : '#dc3545'} !important;">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+            <div>
+              <span class="badge bg-secondary me-2">TKT-#${c.id}</span>
+              <strong class="text-forest fs-5">${c.title}</strong>
+              <div class="small text-muted">
+                <i class="bi bi-building me-1"></i> ${c.hotel_name} (${c.hotel_city})
+                ${c.room_number ? ' • Room ' + c.room_number : ''}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge ${c.priority === 'emergency' ? 'bg-danger' : (c.priority === 'high' ? 'bg-warning text-dark' : 'bg-light text-dark border')} text-uppercase">${c.priority} Priority</span>
+              <span class="status-pill ${isResolved ? 'status-pill-success' : 'status-pill-danger'}">${c.status.toUpperCase()}</span>
+            </div>
+          </div>
+
+          <p class="text-muted small mb-2">${c.description}</p>
+
+          ${c.resolution_notes ? `
+            <div class="p-2 bg-success-subtle rounded-3 small text-success border border-success-subtle mb-2">
+              <strong><i class="bi bi-check-circle me-1"></i> Operations Resolution:</strong> ${c.resolution_notes}
+            </div>
+          ` : ''}
+
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <small class="text-muted"><i class="bi bi-clock me-1"></i> Reported on ${api.formatDate(c.created_at)}</small>
+            <div>
+              ${isResolved ? `
+                <button class="btn btn-outline-danger btn-sm py-1 px-3" onclick="reopenCustomerComplaint(${c.id})">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> Issue Not Resolved? Re-open Complaint
+                </button>
+              ` : `
+                <span class="small text-muted"><i class="bi bi-hourglass-split me-1 text-warning"></i> Operations team dispatched</span>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div class="text-danger small py-3">${err.message}</div>`;
+  }
+}
+
+function openRaiseComplaintModal(hotelId, hotelName, roomNumber) {
+  const hotelSelect = document.getElementById('cmpl-hotel-id');
+  const roomInput = document.getElementById('cmpl-room-number');
+
+  if (hotelSelect) {
+    if (cachedCustomerBookings.length > 0) {
+      hotelSelect.innerHTML = cachedCustomerBookings.map(b => 
+        `<option value="${b.hotel_id}" ${hotelId == b.hotel_id ? 'selected' : ''}>${b.hotel_name} (${b.hotel_city}) - Ref: ${b.booking_reference}</option>`
+      ).join('');
+    } else {
+      hotelSelect.innerHTML = `<option value="${hotelId || 1}">${hotelName || 'Current Hotel Stay'}</option>`;
+    }
+  }
+
+  if (roomInput && roomNumber) {
+    roomInput.value = roomNumber;
+  }
+
+  const modalEl = document.getElementById('raiseComplaintModal');
+  if (modalEl) {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+async function submitCustomerComplaint(e) {
+  e.preventDefault();
+  const hotel_id = document.getElementById('cmpl-hotel-id').value;
+  const room_number = document.getElementById('cmpl-room-number').value.trim();
+  const issue_category = document.getElementById('cmpl-category').value;
+  const title = document.getElementById('cmpl-title').value.trim();
+  const description = document.getElementById('cmpl-desc').value.trim();
+
+  const submitBtn = document.getElementById('cmpl-submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+  }
+
+  try {
+    const res = await api.post('/staff/customer/complaints', {
+      hotel_id,
+      room_number: room_number || null,
+      issue_category,
+      title,
+      description,
+      priority: 'high'
+    });
+
+    if (res.success) {
+      api.showToast('Your complaint has been submitted. Operations staff alerted.', 'success');
+      e.target.reset();
+      const modalEl = document.getElementById('raiseComplaintModal');
+      const instance = bootstrap.Modal.getInstance(modalEl);
+      if (instance) instance.hide();
+
+      // Switch to complaints tab and reload
+      const triggerEl = document.querySelector('#cust-tabs button[data-bs-target="#tab-complaints"]');
+      if (triggerEl) bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+      await loadCustomerComplaints();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Submit Complaint Ticket';
+    }
+  }
+}
+
+async function reopenCustomerComplaint(taskId) {
+  const reason = prompt('Please explain why the issue is still unresolved (e.g. Defect recurred, noise resumed):');
+  if (!reason) return;
+
+  try {
+    const res = await api.patch(`/staff/maintenance/${taskId}/reopen`, { reason });
+    if (res.success) {
+      api.showToast('Complaint re-opened. Hotel supervisor alerted.', 'warning');
+      await loadCustomerComplaints();
     }
   } catch (err) {
     api.showToast(err.message, 'error');

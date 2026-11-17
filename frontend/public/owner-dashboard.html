@@ -53,7 +53,7 @@
       <div class="sidebar-profile">
         <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&q=80" class="sidebar-avatar" alt="Owner">
         <div class="overflow-hidden">
-          <div class="sidebar-name text-truncate" id="owner-name-display">Kabir Oberoi</div>
+          <div class="sidebar-name text-truncate" id="owner-name-display">Hotel Management</div>
           <div class="sidebar-role-badge"><i class="bi bi-shield-check text-success me-1"></i> Hotelier Partner</div>
         </div>
       </div>
@@ -73,6 +73,9 @@
         </a>
         <a href="#" class="sidebar-link" data-section="staff">
           <i class="bi bi-people"></i> Staff & Employees
+        </a>
+        <a href="#" class="sidebar-link" data-section="maintenance">
+          <i class="bi bi-wrench"></i> Complaints & Repairs
         </a>
         <hr class="text-muted my-3">
         <a href="/hotels.html" class="sidebar-link text-muted" target="_blank">
@@ -298,6 +301,38 @@
             </thead>
             <tbody id="owner-staff-tbody">
               <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION 6: COMPLAINTS & MAINTENANCE REPAIRS -->
+      <div id="sec-maintenance" class="dashboard-section" style="display: none;">
+        <div class="dashboard-header">
+          <div>
+            <h2 class="dashboard-title font-serif">Guest Complaints & Property Repairs</h2>
+            <div class="dashboard-subtitle">Monitor guest issues, facility maintenance requests, and resolution workflows.</div>
+          </div>
+          <button class="btn btn-danger btn-sm rounded-pill px-3" onclick="openOwnerNewComplaintModal()">
+            <i class="bi bi-plus-lg me-1"></i> Log New Issue
+          </button>
+        </div>
+
+        <div class="table-custom-container">
+          <table class="table table-custom">
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Location / Room</th>
+                <th>Category</th>
+                <th>Subject & Description</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="owner-maintenance-tbody">
+              <!-- Loaded dynamically by JS -->
             </tbody>
           </table>
         </div>

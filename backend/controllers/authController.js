@@ -135,6 +135,108 @@ exports.registerOwner = async (req, res) => {
   }
 };
 
+// 2b. Direct Staff Employee Registration (Housekeeping, Receptionist, Maintenance, etc.)
+exports.registerStaff = async (req, res) => {
+  try {
+    const {
+      full_name,
+      email,
+      phone,
+      password,
+      role = 'housekeeping',
+      hotel_id,
+      shift = 'Morning'
+    } = req.body;
+
+    if (!full_name || !email || !phone || !password || !hotel_id) {
+      return res.status(400).json({ success: false, message: 'Please provide full name, email, phone, password, and assigned hotel.' });
+    }
+
+    const validRoles = ['housekeeping', 'receptionist', 'maintenance', 'room_service', 'kitchen', 'security', 'manager'];
+    const chosenRole = validRoles.includes(role) ? role : 'housekeeping';
+
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email.trim().toLowerCase()]);
+    if (existing && existing.length > 0) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists. Please sign in or use another email.' });
+    }
+
+    // Verify hotel exists
+    const [hotels] = await db.query('SELECT id, name, city FROM hotels WHERE id = ?', [hotel_id]);
+    if (!hotels || hotels.length === 0) {
+      return res.status(404).json({ success: false, message: 'Selected hotel property not found.' });
+    }
+    const hotel = hotels[0];
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const [uRes] = await db.query(
+      `INSERT INTO users (full_name, email, phone, password_hash, role)
+       VALUES (?, ?, ?, ?, ?)`,
+      [full_name.trim(), email.trim().toLowerCase(), phone.trim(), password_hash, chosenRole]
+    );
+    const userId = uRes.insertId;
+
+    // Map role to valid staff_profiles department enum
+    const deptMap = {
+      housekeeping: 'Housekeeping',
+      receptionist: 'Front Office',
+      maintenance: 'Maintenance',
+      room_service: 'F&B',
+      kitchen: 'F&B',
+      security: 'Security',
+      manager: 'Management'
+    };
+    const department = deptMap[chosenRole] || 'Housekeeping';
+
+    const validShifts = ['Morning', 'Evening', 'Night', 'Rotational'];
+    const chosenShift = validShifts.includes(shift) ? shift : 'Morning';
+
+    const empCode = `EMP-${chosenRole.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const joinDate = new Date().toISOString().split('T')[0];
+
+    const [spRes] = await db.query(
+      `INSERT INTO staff_profiles (user_id, hotel_id, department, employee_code, shift, salary, date_of_joining, is_active)
+       VALUES (?, ?, ?, ?, ?, 26000.00, ?, 1)`,
+      [userId, hotel.id, department, empCode, chosenShift, joinDate]
+    );
+
+    const staffPayload = {
+      id: userId,
+      full_name: full_name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      role: chosenRole,
+      staff_info: {
+        id: spRes.insertId,
+        hotel_id: hotel.id,
+        hotel_name: hotel.name,
+        hotel_city: hotel.city,
+        department,
+        shift: chosenShift,
+        employee_code: empCode
+      }
+    };
+
+    const token = signToken(staffPayload);
+
+    res.cookie('token', token, {
+      httpOnly: false,
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Registered successfully as ${chosenRole.replace('_', ' ')} at ${hotel.name}.`,
+      token,
+      user: staffPayload
+    });
+  } catch (err) {
+    console.error('Register staff error:', err);
+    return res.status(500).json({ success: false, message: 'Server error during staff registration: ' + err.message });
+  }
+};
+
 // 3. Universal Login (Customer, Owner, Staff, Admin)
 exports.login = async (req, res) => {
   try {

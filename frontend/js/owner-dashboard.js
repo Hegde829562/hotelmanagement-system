@@ -74,6 +74,7 @@ async function refreshOwnerDashboard() {
   await loadOwnerBookingsTable();
   await loadRoomsGrid();
   await loadStaffRoster();
+  await loadOwnerMaintenanceTasks();
 }
 
 async function loadOwnerAnalytics() {
@@ -552,6 +553,124 @@ async function handleRegisterNewStaff(e) {
       const modal = bootstrap.Modal.getInstance(document.getElementById('addStaffModal'));
       modal.hide();
       await loadStaffRoster();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
+  }
+}
+
+// -------------------------------------------------------------
+// OWNER MAINTENANCE & COMPLAINTS MANAGEMENT
+// -------------------------------------------------------------
+async function loadOwnerMaintenanceTasks() {
+  const container = document.getElementById('owner-maintenance-tbody');
+  if (!container) return;
+
+  const targetId = (currentSelectedHotelId && currentSelectedHotelId !== 'all') 
+    ? currentSelectedHotelId 
+    : (ownerHotels.length > 0 ? ownerHotels[0].id : null);
+
+  if (!targetId) {
+    container.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Select a hotel property to inspect complaints.</td></tr>';
+    return;
+  }
+
+  try {
+    const res = await api.get(`/staff/hotel/${targetId}/maintenance`);
+    if (!res.success || !res.tasks || res.tasks.length === 0) {
+      container.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-check-circle text-success me-1"></i> No active maintenance issues or guest complaints recorded.</td></tr>';
+      return;
+    }
+
+    container.innerHTML = res.tasks.map(t => {
+      const isResolved = t.status === 'resolved' || t.status === 'closed';
+
+      return `
+        <tr>
+          <td><span class="badge bg-secondary">TKT-#${t.id}</span></td>
+          <td><strong>${t.room_number ? 'Room ' + t.room_number : 'General Facility'}</strong></td>
+          <td><span class="badge bg-light text-dark border text-uppercase">${t.issue_category}</span></td>
+          <td>
+            <strong class="text-forest">${t.title}</strong><br>
+            <small class="text-muted">${t.description}</small>
+            ${t.resolution_notes ? `<div class="small text-success mt-1"><strong>Resolution:</strong> ${t.resolution_notes}</div>` : ''}
+          </td>
+          <td><span class="badge ${t.priority === 'emergency' ? 'bg-danger' : (t.priority === 'high' ? 'bg-warning text-dark' : 'bg-secondary')}">${t.priority.toUpperCase()}</span></td>
+          <td><span class="status-pill ${isResolved ? 'status-pill-success' : 'status-pill-danger'}">${t.status.toUpperCase()}</span></td>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              ${!isResolved ? `
+                <button class="btn btn-outline-forest btn-sm px-2 py-1" onclick="resolveOwnerTicket(${t.id})">
+                  <i class="bi bi-check2"></i> Resolve
+                </button>
+              ` : `
+                <button class="btn btn-outline-danger btn-sm px-2 py-1" onclick="reopenOwnerTicket(${t.id})">
+                  <i class="bi bi-arrow-counterclockwise"></i> Re-open
+                </button>
+              `}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load owner maintenance:', err);
+    container.innerHTML = `<tr><td colspan="7" class="text-danger small py-3">${err.message}</td></tr>`;
+  }
+}
+
+async function resolveOwnerTicket(taskId) {
+  const notes = prompt('Enter resolution notes for this complaint/maintenance ticket:');
+  if (!notes) return;
+
+  try {
+    const res = await api.patch(`/staff/maintenance/${taskId}`, { status: 'resolved', resolution_notes: notes });
+    if (res.success) {
+      api.showToast('Ticket marked resolved.', 'success');
+      await refreshOwnerDashboard();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
+  }
+}
+
+async function reopenOwnerTicket(taskId) {
+  const reason = prompt('Reason for re-opening complaint ticket:');
+  if (!reason) return;
+
+  try {
+    const res = await api.patch(`/staff/maintenance/${taskId}/reopen`, { reason });
+    if (res.success) {
+      api.showToast('Ticket reopened.', 'warning');
+      await refreshOwnerDashboard();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
+  }
+}
+
+async function openOwnerNewComplaintModal() {
+  const targetId = (currentSelectedHotelId && currentSelectedHotelId !== 'all') 
+    ? currentSelectedHotelId 
+    : (ownerHotels.length > 0 ? ownerHotels[0].id : 1);
+
+  const title = prompt('Enter issue subject (e.g. Pool pump maintenance check):');
+  if (!title) return;
+  const description = prompt('Enter detailed description of issue:');
+  if (!description) return;
+  const room = prompt('Enter Room Number (or leave empty for common facility):');
+
+  try {
+    const res = await api.post(`/staff/hotel/${targetId}/maintenance`, {
+      room_number: room || null,
+      issue_category: 'other',
+      title,
+      description,
+      priority: 'high'
+    });
+    if (res.success) {
+      api.showToast('Complaint/ticket logged successfully.', 'success');
+      await refreshOwnerDashboard();
     }
   } catch (err) {
     api.showToast(err.message, 'error');

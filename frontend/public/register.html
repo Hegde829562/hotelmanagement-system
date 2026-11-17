@@ -40,13 +40,18 @@
 
             <ul class="nav nav-pills justify-content-center gap-2 mt-3" id="reg-tabs">
               <li class="nav-item">
-                <button class="nav-link active rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tab-reg-customer">
+                <button class="nav-link active rounded-pill px-3" data-bs-toggle="pill" data-bs-target="#tab-reg-customer">
                   <i class="bi bi-person me-1"></i> Traveler / Customer
                 </button>
               </li>
               <li class="nav-item">
-                <button class="nav-link rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#tab-reg-owner">
-                  <i class="bi bi-building me-1"></i> Hotel Owner Partner
+                <button class="nav-link rounded-pill px-3" data-bs-toggle="pill" data-bs-target="#tab-reg-owner">
+                  <i class="bi bi-building me-1"></i> Hotel Owner
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link rounded-pill px-3" data-bs-toggle="pill" data-bs-target="#tab-reg-staff">
+                  <i class="bi bi-person-badge me-1"></i> Hotel Staff
                 </button>
               </li>
             </ul>
@@ -117,6 +122,69 @@
 
                 <button type="submit" id="owner-reg-btn" class="btn btn-forest w-100 py-2 fw-semibold">
                   Register as Hotel Owner Partner
+                </button>
+              </form>
+            </div>
+
+            <!-- STAFF REGISTRATION (Housekeeping, Receptionist, Maintenance, etc.) -->
+            <div class="tab-pane fade" id="tab-reg-staff">
+              <form id="staff-reg-form">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Full Name</label>
+                  <input type="text" id="staff-name" class="form-control" required placeholder="e.g. Deepa Kumari">
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Work Email</label>
+                    <input type="email" id="staff-email" class="form-control" required placeholder="staff@domain.com">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Contact Phone</label>
+                    <input type="text" id="staff-phone" class="form-control" required placeholder="+91 98450 11223">
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Assigned Hotel Property</label>
+                  <select id="staff-hotel-select" class="form-select" required>
+                    <option value="">Loading hotel properties...</option>
+                  </select>
+                  <small class="text-muted">Select the hotel where you will perform housekeeping, front desk, or maintenance operations.</small>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Staff Job Role</label>
+                    <select id="staff-role" class="form-select" required>
+                      <option value="housekeeping" selected>Housekeeping Staff (Sanitization & Turnover)</option>
+                      <option value="receptionist">Receptionist (Front Desk & Check-in)</option>
+                      <option value="maintenance">Maintenance Staff (Repairs & Engineering)</option>
+                      <option value="room_service">Room Service Staff (In-Room Dining)</option>
+                      <option value="kitchen">Kitchen Staff / Culinary</option>
+                      <option value="security">Security & Surveillance Staff</option>
+                      <option value="manager">Hotel Operations Manager</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Assigned Shift</label>
+                    <select id="staff-shift" class="form-select" required>
+                      <option value="Morning" selected>Morning Shift (07:00 - 15:30)</option>
+                      <option value="Evening">Evening Shift (15:00 - 23:30)</option>
+                      <option value="Night">Night Shift (23:00 - 07:30)</option>
+                      <option value="Rotational">Rotational Shift</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label small fw-bold text-muted text-uppercase">Password (min 6 chars)</label>
+                  <input type="password" id="staff-password" class="form-control" minlength="6" required placeholder="••••••••">
+                  <small class="text-muted">Your credentials give you instant access to your dedicated Staff Operations Dashboard.</small>
+                </div>
+
+                <button type="submit" id="staff-reg-btn" class="btn btn-forest w-100 py-2 fw-semibold">
+                  Register as Staff Employee
                 </button>
               </form>
             </div>
@@ -196,6 +264,59 @@
         api.showToast(err.message, 'error');
         btn.disabled = false;
         btn.innerHTML = 'Register as Hotel Owner Partner';
+      }
+    });
+
+    // Populate Hotel Select for Staff Registration
+    async function loadHotelsForStaff() {
+      const select = document.getElementById('staff-hotel-select');
+      if (!select) return;
+      try {
+        const res = await api.get('/hotels?limit=100');
+        if (res.success && res.hotels && res.hotels.length > 0) {
+          select.innerHTML = '<option value="">-- Choose Hotel Property --</option>' + 
+            res.hotels.map(h => `<option value="${h.id}">${h.name} (${h.city})</option>`).join('');
+        } else {
+          select.innerHTML = '<option value="1">The Glasshouse Garden Manor (Bengaluru)</option>';
+        }
+      } catch (e) {
+        select.innerHTML = '<option value="1">The Glasshouse Garden Manor (Bengaluru)</option>';
+      }
+    }
+    loadHotelsForStaff();
+
+    // Staff Register
+    document.getElementById('staff-reg-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('staff-name').value.trim();
+      const email = document.getElementById('staff-email').value.trim();
+      const phone = document.getElementById('staff-phone').value.trim();
+      const hotel_id = document.getElementById('staff-hotel-select').value;
+      const role = document.getElementById('staff-role').value;
+      const shift = document.getElementById('staff-shift').value;
+      const password = document.getElementById('staff-password').value;
+
+      if (!hotel_id) {
+        api.showToast('Please select your assigned hotel property.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('staff-reg-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registering Staff...';
+
+      try {
+        const res = await api.post('/auth/register/staff', { full_name, email, phone, hotel_id, role, shift, password });
+        if (res.success && res.token) {
+          api.setToken(res.token);
+          api.setUser(res.user);
+          api.showToast(res.message, 'success');
+          setTimeout(() => { window.location.href = '/staff-dashboard.html'; }, 600);
+        }
+      } catch (err) {
+        api.showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = 'Register as Staff Employee';
       }
     });
   </script>

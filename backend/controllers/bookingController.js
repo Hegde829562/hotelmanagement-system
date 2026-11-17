@@ -76,7 +76,8 @@ exports.checkAvailability = async (req, res) => {
         total_amount: totalEstimated,
         available_rooms_count: availableCount,
         is_available: availableCount > 0,
-        available_room_ids: availableRooms.map(r => r.id)
+        available_room_ids: availableRooms.map(r => r.id),
+        physical_rooms: availableRooms
       });
     }
 

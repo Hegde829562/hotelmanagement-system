@@ -17,14 +17,21 @@ router.delete('/member/:staffId', authenticate, authorize('owner', 'manager'), s
 // Front Desk Board
 router.get('/hotel/:hotelId/front-desk', authenticate, authorize('owner', 'manager', 'receptionist'), enforceHotelOwnership, staffController.getFrontDeskBoard);
 
-// Housekeeping
+// Housekeeping & Room Matrix
+router.get('/hotel/:hotelId/room-matrix', authenticate, authorize('owner', 'manager', 'receptionist', 'housekeeping', 'maintenance'), enforceHotelOwnership, staffController.getHotelRoomMatrix);
+router.patch('/room/:roomId/housekeeping', authenticate, authorize('owner', 'manager', 'housekeeping', 'receptionist'), staffController.updateRoomHousekeeping);
 router.get('/hotel/:hotelId/housekeeping', authenticate, authorize('owner', 'manager', 'receptionist', 'housekeeping'), enforceHotelOwnership, staffController.getHousekeepingTasks);
 router.patch('/housekeeping/:taskId', authenticate, authorize('owner', 'manager', 'housekeeping'), staffController.updateHousekeepingTask);
 
-// Maintenance
-router.get('/hotel/:hotelId/maintenance', authenticate, authorize('owner', 'manager', 'maintenance', 'receptionist'), enforceHotelOwnership, staffController.getMaintenanceTasks);
+// Maintenance & Complaints
+router.get('/hotel/:hotelId/maintenance', authenticate, authorize('owner', 'manager', 'maintenance', 'receptionist', 'housekeeping'), enforceHotelOwnership, staffController.getMaintenanceTasks);
 router.post('/hotel/:hotelId/maintenance', authenticate, authorize('owner', 'manager', 'maintenance', 'receptionist', 'housekeeping'), enforceHotelOwnership, staffController.createMaintenanceTask);
-router.patch('/maintenance/:taskId', authenticate, authorize('owner', 'manager', 'maintenance'), staffController.updateMaintenanceTask);
+router.patch('/maintenance/:taskId', authenticate, authorize('owner', 'manager', 'maintenance', 'receptionist', 'housekeeping', 'customer'), staffController.updateMaintenanceTask);
+router.patch('/maintenance/:taskId/reopen', authenticate, authorize('owner', 'manager', 'maintenance', 'receptionist', 'housekeeping', 'customer'), staffController.reopenMaintenanceTask);
+
+// Customer Complaints
+router.get('/customer/complaints', authenticate, staffController.getCustomerComplaints);
+router.post('/customer/complaints', authenticate, staffController.createCustomerComplaint);
 
 // Service Orders (Kitchen / Room Service)
 router.get('/hotel/:hotelId/service-orders', authenticate, authorize('owner', 'manager', 'room_service', 'kitchen'), enforceHotelOwnership, staffController.getServiceOrders);

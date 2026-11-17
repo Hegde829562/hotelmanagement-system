@@ -66,38 +66,8 @@
             </button>
           </form>
 
-          <div class="text-center small text-muted mb-4">
+          <div class="text-center small text-muted">
             Don't have an account yet? <a href="/register.html" class="fw-bold text-olive">Register Here</a>
-          </div>
-
-          <!-- 1-Click Demo Logins for Evaluator -->
-          <div class="p-3 bg-cream rounded-3 border" style="border-color: var(--border-light) !important;">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-forest text-uppercase" style="font-size: 0.72rem;">
-                <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Quick 1-Click Demo Logins
-              </span>
-              <span class="badge bg-forest" style="font-size: 0.65rem;">Academic Evaluation</span>
-            </div>
-            <div class="d-grid gap-1">
-              <button type="button" class="btn btn-sm btn-outline-forest text-start py-1 px-2" onclick="fillAndLogin('customer@intellistay.com', 'password123')">
-                <i class="bi bi-person me-1"></i> <strong>Customer</strong> (Rohan Verma)
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-forest text-start py-1 px-2" onclick="fillAndLogin('owner@intellistay.com', 'password123')">
-                <i class="bi bi-building me-1"></i> <strong>Hotel Owner</strong> (Kabir Oberoi)
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-forest text-start py-1 px-2" onclick="fillAndLogin('receptionist@intellistay.com', 'password123')">
-                <i class="bi bi-bell me-1"></i> <strong>Receptionist</strong> (Front Desk)
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-forest text-start py-1 px-2" onclick="fillAndLogin('housekeeping@intellistay.com', 'password123')">
-                <i class="bi bi-brush me-1"></i> <strong>Housekeeping Staff</strong> (Deepa Kumari)
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-forest text-start py-1 px-2" onclick="fillAndLogin('maintenance@intellistay.com', 'password123')">
-                <i class="bi bi-wrench me-1"></i> <strong>Maintenance Staff</strong> (Mahesh Patil)
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-forest text-start py-1 px-2" onclick="fillAndLogin('admin@intellistay.com', 'admin123')">
-                <i class="bi bi-shield-lock me-1"></i> <strong>Super Admin</strong> (System Administrator)
-              </button>
-            </div>
           </div>
 
         </div>
@@ -123,12 +93,6 @@
       const password = document.getElementById('login-password').value;
       await executeLogin(email, password);
     });
-
-    async function fillAndLogin(email, password) {
-      document.getElementById('login-email').value = email;
-      document.getElementById('login-password').value = password;
-      await executeLogin(email, password);
-    }
 
     async function executeLogin(email, password) {
       const btn = document.getElementById('login-submit-btn');

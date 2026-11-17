@@ -161,15 +161,72 @@
 
       <!-- TAB 2: HOUSEKEEPING BOARD -->
       <div class="tab-pane fade" id="tab-housekeeping">
+        <div class="p-4 bg-white rounded-4 border shadow-sm mb-4">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+            <div>
+              <h5 class="font-serif text-forest mb-0"><i class="bi bi-brush me-1 text-olive"></i> Complete Hotel Cleanliness Matrix (24 Rooms)</h5>
+              <small class="text-muted">Full physical inventory across 4 floors. 1-click status actions persist instantly to the database.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-forest btn-sm rounded-pill" onclick="loadHousekeepingData()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Board
+              </button>
+            </div>
+          </div>
+
+          <!-- Cleanliness Summary Stats -->
+          <div class="row g-2 mb-3">
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-light rounded-3 text-center border">
+                <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Total Rooms</div>
+                <div class="fs-5 fw-bold text-forest" id="hk-stat-total">24</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-success-subtle rounded-3 text-center border border-success-subtle">
+                <div class="small text-success text-uppercase" style="font-size: 0.7rem;">Clean & Ready</div>
+                <div class="fs-5 fw-bold text-success" id="hk-stat-clean">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-danger-subtle rounded-3 text-center border border-danger-subtle">
+                <div class="small text-danger text-uppercase" style="font-size: 0.7rem;">Needs Cleaning</div>
+                <div class="fs-5 fw-bold text-danger" id="hk-stat-dirty">0</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 bg-warning-subtle rounded-3 text-center border border-warning-subtle">
+                <div class="small text-warning-emphasis text-uppercase" style="font-size: 0.7rem;">Cleaning In Progress</div>
+                <div class="fs-5 fw-bold text-warning-emphasis" id="hk-stat-progress">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="d-flex flex-wrap gap-2 mb-3" id="hk-filter-buttons">
+            <button class="btn btn-sm btn-forest rounded-pill active" onclick="filterHkRooms('all')">All 24 Rooms</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterHkRooms('dirty')">Dirty / Needs Attention</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterHkRooms('floor-1')">Floor 1 (101-106)</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterHkRooms('floor-2')">Floor 2 (201-206)</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterHkRooms('floor-3')">Floor 3 (301-306)</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterHkRooms('floor-4')">Floor 4 (401-406)</button>
+          </div>
+
+          <!-- 24-Room Interactive Matrix Grid -->
+          <div class="row g-2" id="housekeeping-room-matrix-container">
+            <div class="col-12 text-center py-4 text-muted">
+              <span class="spinner-border spinner-border-sm me-2"></span>Loading 24-room operational matrix...
+            </div>
+          </div>
+        </div>
+
+        <!-- Turnover Tasks Queue -->
         <div class="p-4 bg-white rounded-4 border shadow-sm">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <h5 class="font-serif text-forest mb-0"><i class="bi bi-brush me-1 text-olive"></i> Room Sanitization & Turnover Queue</h5>
-              <small class="text-muted">High priority turnover tasks are created automatically when guests check out.</small>
+              <h5 class="font-serif text-forest mb-0"><i class="bi bi-clock-history me-1 text-olive"></i> Checkout Departure Turnover Tasks</h5>
+              <small class="text-muted">High priority turnover queue generated on guest departures.</small>
             </div>
-            <button class="btn btn-outline-forest btn-sm rounded-pill" onclick="loadHousekeepingData()">
-              <i class="bi bi-arrow-clockwise me-1"></i> Refresh Queue
-            </button>
           </div>
 
           <div class="table-custom-container">
@@ -196,14 +253,21 @@
       <!-- TAB 3: MAINTENANCE -->
       <div class="tab-pane fade" id="tab-maintenance">
         <div class="p-4 bg-white rounded-4 border shadow-sm">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div>
-              <h5 class="font-serif text-forest mb-0"><i class="bi bi-wrench-adjustable me-1 text-danger"></i> Maintenance & Work Orders</h5>
-              <small class="text-muted">Reported HVAC, plumbing, electrical, and furniture tickets.</small>
+              <h5 class="font-serif text-forest mb-0"><i class="bi bi-wrench-adjustable me-1 text-danger"></i> Maintenance & Complaints Board</h5>
+              <small class="text-muted">Report issues, track progress, resolve tickets, or reopen unresolved complaints.</small>
             </div>
             <button class="btn btn-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#reportMaintenanceModal">
-              <i class="bi bi-plus-lg me-1"></i> New Ticket
+              <i class="bi bi-plus-lg me-1"></i> Report New Issue / Complaint
             </button>
+          </div>
+
+          <!-- Maintenance Filter Pills -->
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn btn-sm btn-forest rounded-pill active" onclick="filterMaintenanceTickets('all')">All Tickets</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterMaintenanceTickets('open')">Open / Active</button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="filterMaintenanceTickets('resolved')">Resolved</button>
           </div>
 
           <div class="table-custom-container">
@@ -216,7 +280,7 @@
                   <th>Title & Description</th>
                   <th>Priority</th>
                   <th>Status</th>
-                  <th>Resolution</th>
+                  <th>Resolution / Actions</th>
                 </tr>
               </thead>
               <tbody id="maintenance-tasks-tbody">
@@ -272,7 +336,9 @@
           <div class="modal-body p-4">
             <div class="mb-3">
               <label class="form-label small fw-bold text-muted text-uppercase">Room Number / Location</label>
-              <input type="text" id="mnt-room-id" class="form-control" placeholder="e.g. 101, 202, or Leave blank for Common Area">
+              <select id="mnt-room-id" class="form-select">
+                <option value="">General Facility / Common Area (Lobby, Restaurant, Pool)</option>
+              </select>
             </div>
 
             <div class="row g-2 mb-3">

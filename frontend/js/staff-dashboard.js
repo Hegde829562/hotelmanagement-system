@@ -155,47 +155,176 @@ async function checkOutGuest(bookingId) {
 }
 
 // -------------------------------------------------------------
-// HOUSEKEEPING
+// HOUSEKEEPING & 24-ROOM CLEANLINESS MATRIX
 // -------------------------------------------------------------
+let cachedHkRooms = [];
+let currentHkFilter = 'all';
+
 async function loadHousekeepingData() {
-  const container = document.getElementById('housekeeping-tasks-tbody');
-  if (!container) return;
+  const matrixContainer = document.getElementById('housekeeping-room-matrix-container');
+  const tasksContainer = document.getElementById('housekeeping-tasks-tbody');
 
   try {
-    const res = await api.get(`/staff/hotel/${currentStaffHotelId}/housekeeping`);
-    if (!res.success || !res.tasks || res.tasks.length === 0) {
-      container.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">All rooms sparkling clean! No pending cleaning tasks.</td></tr>';
-      return;
+    // 1. Fetch Complete 24-Room Inventory Matrix
+    const matrixRes = await api.get(`/staff/hotel/${currentStaffHotelId}/room-matrix`);
+    if (matrixRes.success && matrixRes.rooms) {
+      cachedHkRooms = matrixRes.rooms;
+
+      // Populate room dropdown in Report Maintenance Modal
+      const mntRoomSelect = document.getElementById('mnt-room-id');
+      if (mntRoomSelect) {
+        mntRoomSelect.innerHTML = '<option value="">General Facility / Common Area (Lobby, Restaurant, Pool)</option>' +
+          cachedHkRooms.map(r => `<option value="${r.id}">Room ${r.room_number} (Floor ${r.floor_number} - ${r.room_type_name})</option>`).join('');
+      }
+
+      // Update counters
+      const totalCount = cachedHkRooms.length;
+      const cleanCount = cachedHkRooms.filter(r => r.housekeeping_status === 'clean').length;
+      const dirtyCount = cachedHkRooms.filter(r => r.housekeeping_status === 'dirty').length;
+      const progressCount = cachedHkRooms.filter(r => r.housekeeping_status === 'in_progress').length;
+
+      document.getElementById('hk-stat-total').innerText = totalCount;
+      document.getElementById('hk-stat-clean').innerText = cleanCount;
+      document.getElementById('hk-stat-dirty').innerText = dirtyCount;
+      document.getElementById('hk-stat-progress').innerText = progressCount;
+
+      renderHkRoomMatrix();
     }
 
-    container.innerHTML = res.tasks.map(t => {
-      const isUrgent = t.priority === 'urgent' || t.priority === 'high';
-      const isDone = t.status === 'completed';
+    // 2. Fetch Turnover Tasks Queue
+    if (tasksContainer) {
+      const res = await api.get(`/staff/hotel/${currentStaffHotelId}/housekeeping`);
+      if (!res.success || !res.tasks || res.tasks.length === 0) {
+        tasksContainer.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">All rooms sparkling clean! No pending checkout turnover tasks.</td></tr>';
+      } else {
+        tasksContainer.innerHTML = res.tasks.map(t => {
+          const isUrgent = t.priority === 'urgent' || t.priority === 'high';
+          const isDone = t.status === 'completed';
 
-      return `
-        <tr class="${isUrgent && !isDone ? 'table-warning' : ''}">
-          <td><span class="badge bg-forest fs-6">Room ${t.room_number}</span></td>
-          <td>${t.floor_number}F</td>
-          <td><span class="badge bg-light text-dark border text-uppercase">${t.task_type.replace('_', ' ')}</span></td>
-          <td>
-            <span class="badge ${isUrgent ? 'bg-danger' : 'bg-secondary'}">${t.priority.toUpperCase()}</span>
-          </td>
-          <td><span class="status-pill ${isDone ? 'status-pill-success' : 'status-pill-warning'}">${t.status.toUpperCase()}</span></td>
-          <td class="small text-muted">${t.notes || 'Routine cleaning'}</td>
-          <td>
-            ${!isDone ? `
-              <button class="btn btn-forest btn-sm px-3" onclick="completeHousekeepingTask(${t.id})">
-                <i class="bi bi-check2"></i> Mark Clean
-              </button>
-            ` : `
-              <span class="text-success small fw-bold"><i class="bi bi-check-circle-fill"></i> Completed</span>
-            `}
-          </td>
-        </tr>
-      `;
-    }).join('');
+          return `
+            <tr class="${isUrgent && !isDone ? 'table-warning' : ''}">
+              <td><span class="badge bg-forest fs-6">Room ${t.room_number}</span></td>
+              <td>${t.floor_number}F</td>
+              <td><span class="badge bg-light text-dark border text-uppercase">${t.task_type.replace('_', ' ')}</span></td>
+              <td>
+                <span class="badge ${isUrgent ? 'bg-danger' : 'bg-secondary'}">${t.priority.toUpperCase()}</span>
+              </td>
+              <td><span class="status-pill ${isDone ? 'status-pill-success' : 'status-pill-warning'}">${t.status.toUpperCase()}</span></td>
+              <td class="small text-muted">${t.notes || 'Turnover sanitization'}</td>
+              <td>
+                ${!isDone ? `
+                  <button class="btn btn-forest btn-sm px-3" onclick="completeHousekeepingTask(${t.id})">
+                    <i class="bi bi-check2"></i> Mark Clean
+                  </button>
+                ` : `
+                  <span class="text-success small fw-bold"><i class="bi bi-check-circle-fill"></i> Completed</span>
+                `}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
   } catch (err) {
     console.error('Housekeeping error:', err);
+  }
+}
+
+function filterHkRooms(filter) {
+  currentHkFilter = filter;
+  // Update button active states
+  const buttons = document.querySelectorAll('#hk-filter-buttons button');
+  buttons.forEach(btn => btn.classList.remove('btn-forest', 'active'));
+  buttons.forEach(btn => btn.classList.add('btn-outline-secondary'));
+
+  const activeBtn = event ? event.target : null;
+  if (activeBtn) {
+    activeBtn.classList.remove('btn-outline-secondary');
+    activeBtn.classList.add('btn-forest', 'active');
+  }
+
+  renderHkRoomMatrix();
+}
+
+function renderHkRoomMatrix() {
+  const container = document.getElementById('housekeeping-room-matrix-container');
+  if (!container) return;
+
+  let filtered = [...cachedHkRooms];
+  if (currentHkFilter === 'dirty') {
+    filtered = filtered.filter(r => r.housekeeping_status === 'dirty' || r.housekeeping_status === 'in_progress');
+  } else if (currentHkFilter === 'floor-1') {
+    filtered = filtered.filter(r => r.floor_number === 1);
+  } else if (currentHkFilter === 'floor-2') {
+    filtered = filtered.filter(r => r.floor_number === 2);
+  } else if (currentHkFilter === 'floor-3') {
+    filtered = filtered.filter(r => r.floor_number === 3);
+  } else if (currentHkFilter === 'floor-4') {
+    filtered = filtered.filter(r => r.floor_number === 4);
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="col-12 text-center text-muted py-4">No rooms match the selected filter.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(r => {
+    const isClean = r.housekeeping_status === 'clean';
+    const isDirty = r.housekeeping_status === 'dirty';
+    const inProgress = r.housekeeping_status === 'in_progress';
+
+    let hkBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle">Clean</span>';
+    if (isDirty) hkBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Dirty</span>';
+    else if (inProgress) hkBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Cleaning</span>';
+
+    let occBadge = `<span class="badge bg-light text-dark border text-uppercase" style="font-size: 0.65rem;">${r.status}</span>`;
+
+    return `
+      <div class="col-xl-3 col-lg-4 col-md-6">
+        <div class="p-3 rounded-3 border h-100 d-flex flex-column justify-content-between" style="background-color: ${isDirty ? '#fff5f5' : (inProgress ? '#fffbf0' : '#ffffff')}; border-color: ${isDirty ? '#ffc9c9' : (inProgress ? '#ffe08a' : 'var(--border-subtle)')} !important;">
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fs-5 fw-bold text-forest">Room ${r.room_number}</span>
+              <span class="badge bg-secondary" style="font-size: 0.68rem;">Floor ${r.floor_number}</span>
+            </div>
+            <div class="small text-muted text-truncate mb-2" title="${r.room_type_name}">${r.room_type_name}</div>
+            <div class="d-flex gap-2 align-items-center mb-3">
+              ${hkBadge}
+              ${occBadge}
+            </div>
+          </div>
+          <div class="d-flex gap-1 pt-2 border-top">
+            ${!isClean ? `
+              <button class="btn btn-sm btn-success flex-fill py-1 px-2" style="font-size: 0.75rem;" onclick="setRoomCleanliness(${r.id}, 'clean')">
+                <i class="bi bi-check2"></i> Mark Clean
+              </button>
+            ` : ''}
+            ${!isDirty ? `
+              <button class="btn btn-sm btn-outline-danger flex-fill py-1 px-2" style="font-size: 0.75rem;" onclick="setRoomCleanliness(${r.id}, 'dirty')">
+                <i class="bi bi-x-circle"></i> Mark Dirty
+              </button>
+            ` : ''}
+            ${!inProgress ? `
+              <button class="btn btn-sm btn-outline-warning text-dark flex-fill py-1 px-2" style="font-size: 0.75rem;" onclick="setRoomCleanliness(${r.id}, 'in_progress')">
+                <i class="bi bi-hourglass-split"></i> In Progress
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function setRoomCleanliness(roomId, status) {
+  try {
+    const res = await api.patch(`/staff/room/${roomId}/housekeeping`, { housekeeping_status: status });
+    if (res.success) {
+      api.showToast(res.message, 'success');
+      await loadHousekeepingData();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
   }
 }
 
@@ -215,8 +344,11 @@ async function completeHousekeepingTask(taskId) {
 }
 
 // -------------------------------------------------------------
-// MAINTENANCE
+// MAINTENANCE & COMPLAINTS
 // -------------------------------------------------------------
+let cachedMaintenanceTasks = [];
+let currentMntFilter = 'all';
+
 async function loadMaintenanceData() {
   const container = document.getElementById('maintenance-tasks-tbody');
   if (!container) return;
@@ -228,34 +360,95 @@ async function loadMaintenanceData() {
       return;
     }
 
-    container.innerHTML = res.tasks.map(t => {
-      const isResolved = t.status === 'resolved' || t.status === 'closed';
-
-      return `
-        <tr>
-          <td><span class="badge bg-secondary">TKT-#${t.id}</span></td>
-          <td><strong>Room ${t.room_number || 'General Facility'}</strong></td>
-          <td><span class="badge bg-light text-dark border text-uppercase">${t.issue_category}</span></td>
-          <td>
-            <strong>${t.title}</strong><br>
-            <small class="text-muted">${t.description}</small>
-          </td>
-          <td><span class="badge ${t.priority === 'emergency' ? 'bg-danger' : 'bg-warning text-dark'}">${t.priority.toUpperCase()}</span></td>
-          <td><span class="status-pill ${isResolved ? 'status-pill-success' : 'status-pill-danger'}">${t.status.toUpperCase()}</span></td>
-          <td>
-            ${!isResolved ? `
-              <button class="btn btn-outline-forest btn-sm px-2" onclick="promptResolveMaintenance(${t.id})">
-                Resolve Issue
-              </button>
-            ` : `
-              <span class="small text-success fw-bold"><i class="bi bi-check-circle"></i> Resolved</span>
-            `}
-          </td>
-        </tr>
-      `;
-    }).join('');
+    cachedMaintenanceTasks = res.tasks;
+    renderMaintenanceTable();
   } catch (err) {
     console.error('Maintenance error:', err);
+  }
+}
+
+function filterMaintenanceTickets(filter) {
+  currentMntFilter = filter;
+  renderMaintenanceTable();
+}
+
+function renderMaintenanceTable() {
+  const container = document.getElementById('maintenance-tasks-tbody');
+  if (!container) return;
+
+  let filtered = [...cachedMaintenanceTasks];
+  if (currentMntFilter === 'open') {
+    filtered = filtered.filter(t => t.status !== 'resolved' && t.status !== 'closed');
+  } else if (currentMntFilter === 'resolved') {
+    filtered = filtered.filter(t => t.status === 'resolved' || t.status === 'closed');
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No tickets match this filter.</td></tr>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(t => {
+    const isResolved = t.status === 'resolved' || t.status === 'closed';
+
+    return `
+      <tr class="${isResolved ? 'opacity-75' : ''}">
+        <td><span class="badge bg-secondary">TKT-#${t.id}</span></td>
+        <td><strong>${t.room_number ? 'Room ' + t.room_number : 'General Facility'}</strong></td>
+        <td><span class="badge bg-light text-dark border text-uppercase">${t.issue_category}</span></td>
+        <td>
+          <strong class="text-forest">${t.title}</strong><br>
+          <small class="text-muted">${t.description}</small>
+          ${t.resolution_notes ? `<div class="small text-success mt-1"><strong>Resolution Note:</strong> ${t.resolution_notes}</div>` : ''}
+        </td>
+        <td><span class="badge ${t.priority === 'emergency' ? 'bg-danger' : (t.priority === 'high' ? 'bg-warning text-dark' : 'bg-secondary')}">${t.priority.toUpperCase()}</span></td>
+        <td><span class="status-pill ${isResolved ? 'status-pill-success' : 'status-pill-danger'}">${t.status.toUpperCase()}</span></td>
+        <td>
+          <div class="d-flex gap-1 flex-wrap">
+            ${!isResolved ? `
+              <button class="btn btn-outline-forest btn-sm px-2 py-1" onclick="promptResolveMaintenance(${t.id})">
+                <i class="bi bi-check2-circle me-1"></i> Resolve Ticket
+              </button>
+              <button class="btn btn-outline-warning text-dark btn-sm px-2 py-1" onclick="markMaintenanceInProgress(${t.id})">
+                <i class="bi bi-tools me-1"></i> In Progress
+              </button>
+            ` : `
+              <span class="small text-success fw-bold d-block mb-1"><i class="bi bi-check-circle-fill"></i> Resolved</span>
+              <button class="btn btn-outline-danger btn-sm px-2 py-0" style="font-size: 0.72rem;" onclick="reopenMaintenanceTicket(${t.id})">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Re-open Complaint
+              </button>
+            `}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function markMaintenanceInProgress(taskId) {
+  try {
+    const res = await api.patch(`/staff/maintenance/${taskId}`, { status: 'in_progress' });
+    if (res.success) {
+      api.showToast('Ticket marked in progress.', 'info');
+      await loadMaintenanceData();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
+  }
+}
+
+async function reopenMaintenanceTicket(taskId) {
+  const reason = prompt('Reason for re-opening complaint (e.g. Issue recurred or guest reported unresolved defect):');
+  if (!reason) return;
+
+  try {
+    const res = await api.patch(`/staff/maintenance/${taskId}/reopen`, { reason });
+    if (res.success) {
+      api.showToast('Complaint ticket reopened.', 'warning');
+      await loadMaintenanceData();
+    }
+  } catch (err) {
+    api.showToast(err.message, 'error');
   }
 }
 
@@ -292,14 +485,17 @@ async function handleReportNewMaintenance(e) {
       title,
       description,
       priority,
-      mark_room_maintenance: true
+      mark_room_maintenance: Boolean(room_id)
     });
 
     if (res.success) {
-      api.showToast('Maintenance ticket logged successfully.', 'success');
-      const modal = bootstrap.Modal.getInstance(document.getElementById('reportMaintenanceModal'));
-      modal.hide();
+      api.showToast('Maintenance ticket / complaint logged successfully.', 'success');
+      e.target.reset();
+      const modalEl = document.getElementById('reportMaintenanceModal');
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
+      if (modalInstance) modalInstance.hide();
       await loadMaintenanceData();
+      await loadHousekeepingData();
     }
   } catch (err) {
     api.showToast(err.message, 'error');

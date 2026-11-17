@@ -62,6 +62,7 @@ async function loadHotelDetail(idOrSlug) {
     currentHotel = res.hotel;
     renderHotelContent(currentHotel);
     await checkLiveAvailability();
+    await loadHotel24Rooms(currentHotel.id);
   } catch (err) {
     console.error('Failed to load hotel:', err);
   }
@@ -178,6 +179,12 @@ function renderAvailableRooms(categories, nights) {
                 ? `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check2-circle me-1"></i> ${cat.available_rooms_count} rooms available for selected dates</span>`
                 : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-circle me-1"></i> Sold out for selected dates</span>`
               }
+            </div>
+            <div class="mt-2 pt-2 border-top">
+              <span class="small fw-semibold text-forest me-1">Available Rooms:</span>
+              ${cat.physical_rooms && cat.physical_rooms.length > 0 
+                ? cat.physical_rooms.map(pr => `<span class="badge bg-light text-forest border me-1">Room ${pr.room_number} (F${pr.floor_number})</span>`).join('') 
+                : '<span class="small text-muted">Currently reserved</span>'}
             </div>
           </div>
           <div class="col-md-4 text-md-end">
@@ -319,5 +326,44 @@ function renderReviewsSection(reviews, stats) {
       <p class="text-muted small mb-0">${r.comment}</p>
     </div>
   `).join('');
+}
+
+// Load and Render Complete 24-Room Property Directory & Floor Map
+async function loadHotel24Rooms(hotelId) {
+  const container = document.getElementById('hotel-24-rooms-grid');
+  if (!container) return;
+
+  try {
+    const res = await api.get(`/rooms/hotel/${hotelId}`);
+    if (!res.success || !res.rooms || res.rooms.length === 0) {
+      container.innerHTML = '<div class="col-12 text-muted text-center py-3">Property rooms information unavailable.</div>';
+      return;
+    }
+
+    container.innerHTML = res.rooms.map(r => {
+      let statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle">Ready</span>';
+      if (r.status === 'occupied') {
+        statusBadge = '<span class="badge bg-secondary-subtle text-secondary border">In Stay</span>';
+      } else if (r.status === 'cleaning') {
+        statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Turnover</span>';
+      } else if (r.status === 'maintenance') {
+        statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Maintenance</span>';
+      }
+
+      return `
+        <div class="col-6 col-md-3 col-lg-2">
+          <div class="p-2 rounded-3 border text-center h-100 bg-light" style="font-size: 0.8rem;">
+            <div class="fw-bold text-forest fs-6">Room ${r.room_number}</div>
+            <div class="text-muted small mb-1">Floor ${r.floor_number}</div>
+            <div class="text-truncate small text-secondary mb-1" title="${r.room_type_name}">${r.room_type_name}</div>
+            ${statusBadge}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load 24 rooms:', err);
+    container.innerHTML = '<div class="col-12 text-danger small py-2">Could not load room directory.</div>';
+  }
 }
 

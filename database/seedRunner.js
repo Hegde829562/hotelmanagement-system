@@ -23,7 +23,7 @@ async function runSeed() {
   for (const t of dropTables) {
     try {
       await db.query(`DROP TABLE IF EXISTS ${t}`);
-    } catch (ignored) {}
+    } catch (ignored) { }
   }
 
   // Create tables
@@ -286,7 +286,7 @@ async function runSeed() {
     const slug = h.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const contactPhone = `+91 9845${String(hotelIndex).padStart(4, '0')}0`;
     const contactEmail = `reservations@${slug.slice(0, 15)}.intellistay.in`;
-    
+
     const [hRes] = await db.query(
       `INSERT INTO hotels (owner_id, name, slug, category, star_rating, description, address, city, state, pincode, contact_phone, contact_email, base_price_per_night, is_featured, approval_status, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 'active')`,
@@ -309,7 +309,7 @@ async function runSeed() {
       if (amId) {
         try {
           await db.query('INSERT INTO hotel_amenities (hotel_id, amenity_id) VALUES (?, ?)', [hotelId, amId]);
-        } catch (ignored) {}
+        } catch (ignored) { }
       }
     }
 

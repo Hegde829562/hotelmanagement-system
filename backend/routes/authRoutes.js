@@ -9,6 +9,7 @@ const { authenticate } = require('../middleware/auth');
 
 router.post('/register/customer', authController.registerCustomer);
 router.post('/register/owner', authController.registerOwner);
+router.post('/register/staff', authController.registerStaff);
 router.post('/login', authController.login);
 router.get('/me', authenticate, authController.getCurrentUser);
 router.put('/profile', authenticate, authController.updateProfile);

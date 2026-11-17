@@ -282,6 +282,84 @@ exports.updateHousekeepingTask = async (req, res) => {
   }
 };
 
+// 4b. Housekeeping & Operations: Complete 24-Room Inventory Matrix
+exports.getHotelRoomMatrix = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    const [rooms] = await db.query(
+      `SELECT r.id, r.hotel_id, r.room_number, r.floor_number, r.status, r.housekeeping_status,
+              rt.name AS room_type_name, rt.base_price, rt.bed_type, rt.capacity_adults
+       FROM rooms r
+       JOIN room_types rt ON r.room_type_id = rt.id
+       WHERE r.hotel_id = ?
+       ORDER BY r.floor_number ASC, r.room_number ASC`,
+      [hotelId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      total_rooms: rooms.length,
+      rooms
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// 4c. Housekeeping: 1-Click Update of Room Cleanliness Status (Clean, Dirty, In Progress)
+exports.updateRoomHousekeeping = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { housekeeping_status } = req.body;
+
+    const [room] = await db.query('SELECT hotel_id, room_number, status, housekeeping_status FROM rooms WHERE id = ?', [roomId]);
+    if (!room || room.length === 0) {
+      return res.status(404).json({ success: false, message: 'Room not found.' });
+    }
+
+    const oldStatus = room[0].housekeeping_status;
+    let newRoomStatus = room[0].status;
+
+    if (housekeeping_status === 'clean' && newRoomStatus === 'cleaning') {
+      newRoomStatus = 'available';
+    } else if (housekeeping_status === 'dirty' && newRoomStatus === 'available') {
+      newRoomStatus = 'cleaning';
+    }
+
+    await db.query(
+      'UPDATE rooms SET housekeeping_status = ?, status = ? WHERE id = ?',
+      [housekeeping_status, newRoomStatus, roomId]
+    );
+
+    // If marked dirty, generate or update turnover task
+    if (housekeeping_status === 'dirty' && oldStatus !== 'dirty') {
+      const today = new Date().toISOString().split('T')[0];
+      await db.query(
+        `INSERT INTO housekeeping_tasks (hotel_id, room_id, task_type, priority, status, notes, scheduled_date)
+         VALUES (?, ?, 'routine_cleaning', 'medium', 'pending', 'Marked dirty for cleaning turnover', ?)`,
+        [room[0].hotel_id, roomId, today]
+      );
+    } else if (housekeeping_status === 'clean') {
+      // Mark open housekeeping tasks for this room as completed
+      await db.query(
+        "UPDATE housekeeping_tasks SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE room_id = ? AND status != 'completed'",
+        [roomId]
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Room ${room[0].room_number} status updated to ${housekeeping_status}.`,
+      room_number: room[0].room_number,
+      housekeeping_status,
+      room_status: newRoomStatus
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // =====================================================================
 // MAINTENANCE OPERATIONS
 // =====================================================================
@@ -331,14 +409,15 @@ exports.getMaintenanceTasks = async (req, res) => {
   }
 };
 
-// 6. Maintenance: Create a new maintenance ticket
+// 6. Maintenance: Create a new maintenance ticket / complaint
 exports.createMaintenanceTask = async (req, res) => {
   try {
     const { hotelId } = req.params;
     const userId = req.user.id;
     const {
       room_id,
-      issue_category,
+      room_number,
+      issue_category = 'other',
       title,
       description,
       priority = 'medium',
@@ -349,19 +428,32 @@ exports.createMaintenanceTask = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide issue category, title, and description.' });
     }
 
+    // Resolve room ID whether passed as room_id or room_number string
+    let resolvedRoomId = null;
+    const targetRoomVal = room_id || room_number;
+    if (targetRoomVal) {
+      const [matchedRooms] = await db.query(
+        'SELECT id FROM rooms WHERE hotel_id = ? AND (id = ? OR room_number = ?)',
+        [hotelId, targetRoomVal, String(targetRoomVal).trim()]
+      );
+      if (matchedRooms.length > 0) {
+        resolvedRoomId = matchedRooms[0].id;
+      }
+    }
+
     const [resMt] = await db.query(
       `INSERT INTO maintenance_tasks (hotel_id, room_id, reported_by_user_id, issue_category, title, description, priority, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'reported')`,
-      [hotelId, room_id || null, userId, issue_category, title.trim(), description.trim(), priority]
+      [hotelId, resolvedRoomId, userId, issue_category, title.trim(), description.trim(), priority]
     );
 
-    if (room_id && mark_room_maintenance) {
-      await db.query("UPDATE rooms SET status = 'maintenance' WHERE id = ?", [room_id]);
+    if (resolvedRoomId && mark_room_maintenance) {
+      await db.query("UPDATE rooms SET status = 'maintenance' WHERE id = ?", [resolvedRoomId]);
     }
 
     return res.status(201).json({
       success: true,
-      message: 'Maintenance ticket created successfully.',
+      message: 'Complaint / Maintenance ticket registered successfully.',
       task_id: resMt.insertId
     });
   } catch (err) {
@@ -400,6 +492,111 @@ exports.updateMaintenanceTask = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Maintenance ticket updated successfully.'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// 7b. Maintenance / Complaint: Reopen a resolved ticket
+exports.reopenMaintenanceTask = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { reason = 'Issue reoccurred / requires further attention' } = req.body;
+
+    const [taskRows] = await db.query('SELECT hotel_id, room_id, status FROM maintenance_tasks WHERE id = ?', [taskId]);
+    if (!taskRows || taskRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Ticket not found.' });
+    }
+
+    await db.query(
+      `UPDATE maintenance_tasks 
+       SET status = 'reported', 
+           resolved_at = NULL,
+           description = CONCAT(description, '\n[Reopened]: ', ?)
+       WHERE id = ?`,
+      [reason, taskId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Ticket reopened successfully.'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// 7c. Customer Complaints: Get all complaints raised by the logged-in customer
+exports.getCustomerComplaints = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const [tasks] = await db.query(
+      `SELECT mt.*, h.name AS hotel_name, h.city AS hotel_city, r.room_number, r.floor_number
+       FROM maintenance_tasks mt
+       JOIN hotels h ON mt.hotel_id = h.id
+       LEFT JOIN rooms r ON mt.room_id = r.id
+       WHERE mt.reported_by_user_id = ?
+       ORDER BY mt.created_at DESC`,
+      [userId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      complaints: tasks
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// 7d. Customer Complaints: Raise a new complaint
+exports.createCustomerComplaint = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      hotel_id,
+      room_number,
+      issue_category = 'other',
+      title,
+      description,
+      priority = 'medium'
+    } = req.body;
+
+    if (!hotel_id || !title || !description) {
+      return res.status(400).json({ success: false, message: 'Please provide hotel, title, and description.' });
+    }
+
+    let resolvedRoomId = null;
+    if (room_number) {
+      const [rooms] = await db.query(
+        'SELECT id FROM rooms WHERE hotel_id = ? AND (room_number = ? OR id = ?)',
+        [hotel_id, String(room_number).trim(), room_number]
+      );
+      if (rooms.length > 0) resolvedRoomId = rooms[0].id;
+    }
+
+    const [resMt] = await db.query(
+      `INSERT INTO maintenance_tasks (hotel_id, room_id, reported_by_user_id, issue_category, title, description, priority, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'reported')`,
+      [hotel_id, resolvedRoomId, userId, issue_category, title.trim(), description.trim(), priority]
+    );
+
+    // Notify hotel owner
+    try {
+      const [h] = await db.query('SELECT owner_id, name FROM hotels WHERE id = ?', [hotel_id]);
+      if (h.length > 0) {
+        await db.query(
+          'INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, "complaint")',
+          [h[0].owner_id, `Guest Complaint Raised: ${title.trim()}`, `A guest reported: ${description.trim()} at ${h[0].name}.`, 'complaint']
+        );
+      }
+    } catch (ignore) {}
+
+    return res.status(201).json({
+      success: true,
+      message: 'Complaint submitted successfully. Our operations team is addressing it.',
+      complaint_id: resMt.insertId
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
